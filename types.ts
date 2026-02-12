@@ -1,19 +1,18 @@
-
 export enum PropertyType {
-  SALE = 'For Sale',
-  RENT = 'For Rent',
+  SALE = "For Sale",
+  RENT = "For Rent",
 }
 
 export enum PropertyCategory {
-  HOUSE = 'House',
-  LAND = 'Land',
-  COMMERCIAL = 'Cars & others',
+  HOUSE = "House",
+  LAND = "Land",
+  COMMERCIAL = "Cars & others",
 }
 
 export enum PropertyStatus {
-  PENDING = 'Pending',
-  APPROVED = 'Approved',
-  REJECTED = 'Rejected',
+  PENDING = "Pending",
+  APPROVED = "Approved",
+  REJECTED = "Rejected",
 }
 
 export interface Property {
@@ -42,9 +41,9 @@ export interface StateData {
 }
 
 export enum UserStatus {
-  PENDING = 'Pending',
-  APPROVED = 'Approved',
-  REJECTED = 'Rejected',
+  PENDING = "Pending",
+  APPROVED = "Approved",
+  REJECTED = "Rejected",
 }
 
 export interface User {
@@ -75,12 +74,29 @@ export interface ClientRequest {
   dateRequested: number;
 }
 
-export type ViewState = 'HOME' | 'LISTINGS' | 'UPLOAD' | 'CONTACT' | 'ADMIN' | 'AGENTS';
+export interface Visit {
+  id: string;
+  ip?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  visited_at: string;
+}
+
+export type ViewState =
+  | "HOME"
+  | "PROPERTIES"
+  | "UPLOAD"
+  | "CONTACT"
+  | "ADMIN"
+  | "AGENTS";
 
 export interface PropertyContextType {
   properties: Property[];
   // Updated signature to return error details
-  addProperty: (property: Property) => Promise<{ success: boolean; error?: string }>;
+  addProperty: (
+    property: Property,
+  ) => Promise<{ success: boolean; error?: string }>;
   deleteProperty: (id: string) => Promise<boolean>;
   updatePropertyStatus: (id: string, status: PropertyStatus) => Promise<void>;
   filterState: string;
@@ -89,19 +105,19 @@ export interface PropertyContextType {
   setFilterLGA: (lga: string) => void;
   users: User[];
   updateUserStatus: (userId: string, status: UserStatus) => Promise<void>;
-  
+
   // Auth Logic
   currentUser: User | null;
   loginUser: (email: string, pass: string) => boolean;
   registerUser: (user: Partial<User>) => Promise<void>;
   updateUser: (userId: string, data: Partial<User>) => Promise<void>;
   logoutUser: () => void;
-  
+
   // Requests Logic
   requests: ClientRequest[];
   addRequest: (request: ClientRequest) => Promise<void>;
   deleteRequest: (id: string) => Promise<boolean>;
-  
+
   // Modal Logic
   openRequestModal: (property: Property) => void;
   closeRequestModal: () => void;

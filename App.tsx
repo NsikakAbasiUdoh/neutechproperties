@@ -5,7 +5,6 @@ import React, {
   lazy,
   ErrorInfo,
   ReactNode,
-  Component,
 } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -20,13 +19,13 @@ import {
   PropertyStatus,
   ClientRequest,
 } from "./types";
-import { supabase, isConnected } from "./services/supabaseClient";
+import { supabase, isConnected, logVisit } from "./services/supabaseClient";
 import { MAINTENANCE_MODE } from "./constants";
 import { AlertTriangle, WifiOff, Loader2, RefreshCw } from "lucide-react";
 
 // Lazy Load Pages for Performance Optimization
 const Home = lazy(() => import("./pages/Home"));
-const Listings = lazy(() => import("./pages/Listings"));
+const Properties = lazy(() => import("./pages/Properties"));
 const Upload = lazy(() => import("./pages/Upload"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Admin = lazy(() => import("./pages/Admin"));
@@ -43,7 +42,10 @@ interface ErrorBoundaryState {
 }
 
 // Error Boundary Component
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -209,7 +211,11 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    // 1. Fetch Application Data
     fetchData();
+
+    // 2. Log Visitor Analytics (Once per session)
+    logVisit();
 
     if (isConnected) {
       // Setup Realtime Subscription
@@ -547,8 +553,8 @@ const App: React.FC = () => {
         return (
           <Home propertyContext={propertyContext} onNavigate={setCurrentView} />
         );
-      case "LISTINGS":
-        return <Listings propertyContext={propertyContext} />;
+      case "PROPERTIES":
+        return <Properties propertyContext={propertyContext} />;
       case "UPLOAD":
         return (
           <Upload
