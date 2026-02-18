@@ -97,6 +97,7 @@ export interface PropertyContextType {
   addProperty: (
     property: Property,
   ) => Promise<{ success: boolean; error?: string }>;
+  updateProperty: (id: string, updates: Partial<Property>) => Promise<boolean>;
   deleteProperty: (id: string) => Promise<boolean>;
   updatePropertyStatus: (id: string, status: PropertyStatus) => Promise<void>;
   filterState: string;

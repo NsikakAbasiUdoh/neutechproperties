@@ -84,9 +84,10 @@ const Home: React.FC<HomeProps> = ({ propertyContext, onNavigate }) => {
             <div className="bg-white/10 backdrop-blur-md p-8 md:p-12 rounded-3xl border border-white/20 shadow-2xl flex flex-col items-center">
               {/* Hero Logo */}
               <img
-                src="/logo.png"
+                src="https://drive.google.com/thumbnail?id=1oGa3oIKhFT-CkQhCm4B_Bdr9M9lCr2C3&sz=s1000"
                 alt="Neutech Properties"
                 className="h-20 md:h-28 w-auto mb-6 object-contain drop-shadow-2xl"
+                referrerPolicy="no-referrer"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                 }}

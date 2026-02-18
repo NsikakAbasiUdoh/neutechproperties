@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   User,
   UserStatus,
   PropertyContextType,
   PropertyStatus,
   Visit,
+  Property,
+  PropertyCategory,
+  PropertyType,
 } from "../types";
 import { supabase, isConnected } from "../services/supabaseClient";
+import { NIGERIAN_STATES } from "../constants";
 import {
   Shield,
   CheckCircle,
@@ -33,6 +37,9 @@ import {
   RefreshCw,
   Database,
   Globe,
+  Edit,
+  Save,
+  X,
 } from "lucide-react";
 
 interface AdminProps {
@@ -78,10 +85,17 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [visitsError, setVisitsError] = useState("");
 
+  // Edit State
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [editForm, setEditForm] = useState<
+    Partial<Property> & { featuresString: string }
+  >({ featuresString: "" });
+
   // Data State from Context
   const {
     properties,
     deleteProperty,
+    updateProperty,
     updatePropertyStatus,
     adminAccessCode,
     setAdminAccessCode,
@@ -186,6 +200,39 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
       if (success) {
         alert("Property deleted successfully!");
       }
+    }
+  };
+
+  const handleEditClick = (property: Property) => {
+    setEditingProperty(property);
+    setEditForm({
+      ...property,
+      featuresString: property.features ? property.features.join(", ") : "",
+    });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProperty) return;
+
+    const updates = {
+      title: editForm.title,
+      price: Number(editForm.price),
+      description: editForm.description,
+      type: editForm.type,
+      category: editForm.category,
+      location: editForm.location, // Assuming full object is updated
+      features: editForm.featuresString
+        .split(",")
+        .map((f) => f.trim())
+        .filter((f) => f !== ""),
+      status: editForm.status,
+    };
+
+    const success = await updateProperty(editingProperty.id, updates);
+    if (success) {
+      alert("Property updated successfully!");
+      setEditingProperty(null);
     }
   };
 
@@ -328,6 +375,15 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
     });
     return Object.entries(stats).sort((a, b) => b[1] - a[1]);
   }, [visits]);
+
+  // Available LGAs for Edit Form
+  const editAvailableLgas = useMemo(() => {
+    if (!editForm.location?.state) return [];
+    const state = NIGERIAN_STATES.find(
+      (s) => s.name === editForm.location?.state,
+    );
+    return state ? state.lgas : [];
+  }, [editForm.location?.state]);
 
   // ... (Keep existing View Renders (Recovery, Verify, SetNewCode, Login))
   if (view === "RECOVERY_OPTIONS")
@@ -613,7 +669,7 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
 
   // 5. Main Dashboard
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
       {/* ... (Header & Tab Navigation - No changes) ... */}
       <div className="bg-primary/90 backdrop-blur text-white py-12 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -908,6 +964,12 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <button
+                                onClick={() => handleEditClick(prop)}
+                                className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-2 py-1 rounded mr-2"
+                              >
+                                Edit
+                              </button>
+                              <button
                                 onClick={() => handleApproveProperty(prop.id)}
                                 className="text-green-600 hover:text-green-900 bg-green-50 px-2 py-1 rounded"
                               >
@@ -1198,9 +1260,24 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                handleEditClick(property);
+                              }}
+                              className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-md transition-colors inline-flex items-center mr-2 group cursor-pointer"
+                              title="Edit Property"
+                            >
+                              <Edit
+                                size={16}
+                                className="mr-2 group-hover:scale-110 transition-transform"
+                              />
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 handleDeleteProperty(property.id);
                               }}
-                              className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-md transition-colors flex items-center ml-auto group cursor-pointer"
+                              className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-md transition-colors inline-flex items-center group cursor-pointer"
                               title="Mark as Sold/Rented (Delete)"
                             >
                               <Trash2
@@ -1332,6 +1409,277 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
           </div>
         )}
       </div>
+
+      {/* --- Edit Modal --- */}
+      {editingProperty && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div
+              className="fixed inset-0 transition-opacity"
+              aria-hidden="true"
+            >
+              <div
+                className="absolute inset-0 bg-gray-900 opacity-75"
+                onClick={() => setEditingProperty(null)}
+              ></div>
+            </div>
+
+            <span
+              className="hidden sm:inline-block sm:align-middle sm:h-screen"
+              aria-hidden="true"
+            >
+              &#8203;
+            </span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="flex justify-between items-center mb-5 pb-2 border-b">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
+                    <Edit className="mr-2 text-secondary" size={20} /> Edit
+                    Property
+                  </h3>
+                  <button
+                    onClick={() => setEditingProperty(null)}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <form
+                  id="editForm"
+                  onSubmit={handleSaveEdit}
+                  className="space-y-4"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.title}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, title: e.target.value })
+                        }
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Price (NGN)
+                      </label>
+                      <input
+                        type="number"
+                        value={editForm.price}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            price: Number(e.target.value),
+                          })
+                        }
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Type
+                      </label>
+                      <select
+                        value={editForm.type}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            type: e.target.value as PropertyType,
+                          })
+                        }
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm"
+                      >
+                        <option value={PropertyType.SALE}>For Sale</option>
+                        <option value={PropertyType.RENT}>For Rent</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Category
+                      </label>
+                      <select
+                        value={editForm.category}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            category: e.target.value as PropertyCategory,
+                          })
+                        }
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm"
+                      >
+                        <option value={PropertyCategory.HOUSE}>House</option>
+                        <option value={PropertyCategory.LAND}>Land</option>
+                        <option value={PropertyCategory.COMMERCIAL}>
+                          Cars & others
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">
+                      Location
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          State
+                        </label>
+                        <select
+                          value={editForm.location?.state}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              location: {
+                                ...editForm.location!,
+                                state: e.target.value,
+                                lga: "",
+                              },
+                            })
+                          }
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm"
+                        >
+                          {NIGERIAN_STATES.map((s) => (
+                            <option key={s.name} value={s.name}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          LGA
+                        </label>
+                        <select
+                          value={editForm.location?.lga}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              location: {
+                                ...editForm.location!,
+                                lga: e.target.value,
+                              },
+                            })
+                          }
+                          disabled={!editForm.location?.state}
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm disabled:bg-gray-100"
+                        >
+                          <option value="">Select LGA</option>
+                          {editAvailableLgas.map((l) => (
+                            <option key={l} value={l}>
+                              {l}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Address
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.location?.address}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              location: {
+                                ...editForm.location!,
+                                address: e.target.value,
+                              },
+                            })
+                          }
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Description
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={editForm.description}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          description: e.target.value,
+                        })
+                      }
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Features (Comma separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.featuresString}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          featuresString: e.target.value,
+                        })
+                      }
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Status
+                    </label>
+                    <select
+                      value={editForm.status}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          status: e.target.value as PropertyStatus,
+                        })
+                      }
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm"
+                    >
+                      <option value={PropertyStatus.APPROVED}>Approved</option>
+                      <option value={PropertyStatus.PENDING}>Pending</option>
+                      <option value={PropertyStatus.REJECTED}>Rejected</option>
+                    </select>
+                  </div>
+                </form>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="submit"
+                  form="editForm"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-secondary text-base font-medium text-white hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  <Save size={16} className="mr-2 mt-0.5" /> Save Changes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingProperty(null)}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -37,31 +37,12 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             className="flex-shrink-0 cursor-pointer flex items-center gap-2"
             onClick={() => onNavigate("HOME")}
           >
-            {/* Replaced CSS logo with Image */}
             <img
-              src="/logo.png"
+              src="https://drive.google.com/thumbnail?id=1oGa3oIKhFT-CkQhCm4B_Bdr9M9lCr2C3&sz=s400"
               alt="Neutech Properties"
-              className="h-12 w-auto object-contain"
-              onError={(e) => {
-                // Fallback if image fails to load (e.g. user hasn't added it yet)
-                e.currentTarget.style.display = "none";
-                e.currentTarget.nextElementSibling?.classList.remove("hidden");
-              }}
+              className="h-14 w-auto object-contain"
+              referrerPolicy="no-referrer"
             />
-            {/* Fallback Text Logo (Hidden if image loads, shown if fails) */}
-            <div className="hidden flex items-center gap-2">
-              <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center transform rotate-3 shadow-lg">
-                <span className="text-primary font-bold text-xl">N</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-xl tracking-tight leading-none text-white drop-shadow-sm">
-                  NEUTECH
-                </span>
-                <span className="text-xs text-gray-300 uppercase tracking-widest leading-none">
-                  Properties
-                </span>
-              </div>
-            </div>
           </div>
 
           {/* Desktop Menu */}

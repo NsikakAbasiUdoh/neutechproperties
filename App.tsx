@@ -352,6 +352,35 @@ const App: React.FC = () => {
     }
   };
 
+  const updateProperty = async (
+    id: string,
+    updates: Partial<Property>,
+  ): Promise<boolean> => {
+    // Optimistic Update
+    setProperties((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+    );
+
+    if (isConnected) {
+      try {
+        const { error } = await supabase
+          .from("properties")
+          .update(updates)
+          .eq("id", id);
+        if (error) {
+          console.error("Supabase update failed:", error);
+          alert("Failed to update property in database: " + error.message);
+          return false;
+        }
+        return true;
+      } catch (err: any) {
+        console.error("Update exception:", err);
+        return false;
+      }
+    }
+    return true;
+  };
+
   const deleteProperty = async (id: string): Promise<boolean> => {
     console.log("App.tsx: Attempting to delete property:", id);
     // Optimistic Update with String comparison to be safe
@@ -519,6 +548,7 @@ const App: React.FC = () => {
   const propertyContext: PropertyContextType = {
     properties,
     addProperty,
+    updateProperty,
     deleteProperty,
     updatePropertyStatus,
     filterState,
