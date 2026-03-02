@@ -43,8 +43,10 @@ const RequestModal: React.FC<RequestModalProps> = ({
   // Combined media items (images + video)
   const mediaItems = useMemo(() => {
     if (!property) return [];
-    const items: { type: "image" | "video"; url: string }[] =
-      property.images.map((url) => ({ type: "image", url }));
+    const images = property.images || [];
+    const items: { type: "image" | "video"; url: string }[] = images.map(
+      (url) => ({ type: "image", url }),
+    );
     if (property.videoUrl) {
       items.push({ type: "video", url: property.videoUrl });
     }
@@ -82,7 +84,8 @@ const RequestModal: React.FC<RequestModalProps> = ({
       id: Date.now().toString(),
       propertyId: property.id,
       propertyTitle: property.title,
-      propertyImage: property.images[0], // Use first image as thumbnail
+      propertyImage:
+        (property.images && property.images[0]) || property.videoUrl || "", // Use first image or video as thumbnail
       propertyPrice: property.price,
       clientName: formData.fullName,
       clientAddress: formData.address,
@@ -276,6 +279,31 @@ const RequestModal: React.FC<RequestModalProps> = ({
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <p className="text-red-600 font-bold text-sm leading-relaxed mb-3">
+                      Please note that before proceeding with the inspection of
+                      the property, a non-refundable inspection fee of ₦5,000
+                      must be paid. Additionally, the prospective buyer will be
+                      required to sign an agreement stating that if he or she
+                      eventually purchases the property, a compulsory commission
+                      of 5% of the total purchase price shall be paid to us.
+                    </p>
+                    <div className="flex items-start">
+                      <input
+                        type="checkbox"
+                        id="acceptTerms"
+                        required
+                        className="mt-1 mr-2 h-4 w-4 text-secondary focus:ring-secondary border-gray-300 rounded cursor-pointer"
+                      />
+                      <label
+                        htmlFor="acceptTerms"
+                        className="text-sm font-medium text-gray-700 cursor-pointer"
+                      >
+                        I have read and accept these terms and conditions.
+                      </label>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">
                       Full Name

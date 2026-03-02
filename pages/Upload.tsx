@@ -208,8 +208,8 @@ const Upload: React.FC<UploadProps> = ({ propertyContext, onNavigate }) => {
     if (!formData.price) missingFields.push("Price");
     if (!formData.state) missingFields.push("State");
     if (!formData.lga) missingFields.push("LGA");
-    if (imageFiles.length === 0)
-      missingFields.push("At least one Property Image");
+    if (imageFiles.length === 0 && !videoFile)
+      missingFields.push("At least one Property Image or Video");
 
     if (missingFields.length > 0) {
       setError(
@@ -222,20 +222,21 @@ const Upload: React.FC<UploadProps> = ({ propertyContext, onNavigate }) => {
 
     try {
       // 1. Upload Images to Supabase in parallel
-      const uploadPromises = imageFiles.map((file) =>
-        uploadImage(file, "properties"),
-      );
-      const uploadedUrls = await Promise.all(uploadPromises);
-
-      // Filter out any failed uploads (nulls)
-      const validImageUrls = uploadedUrls.filter(
-        (url) => url !== null,
-      ) as string[];
-
-      if (validImageUrls.length === 0) {
-        throw new Error(
-          "Failed to upload images. Please check your connection.",
+      let validImageUrls: string[] = [];
+      if (imageFiles.length > 0) {
+        const uploadPromises = imageFiles.map((file) =>
+          uploadImage(file, "properties"),
         );
+        const uploadedUrls = await Promise.all(uploadPromises);
+
+        // Filter out any failed uploads (nulls)
+        validImageUrls = uploadedUrls.filter((url) => url !== null) as string[];
+
+        if (validImageUrls.length === 0) {
+          throw new Error(
+            "Failed to upload images. Please check your connection.",
+          );
+        }
       }
 
       // Upload Video if present
@@ -625,7 +626,7 @@ const Upload: React.FC<UploadProps> = ({ propertyContext, onNavigate }) => {
             {/* Multiple Image Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Property Images *
+                Property Images (Optional if Video is provided)
               </label>
               <div className="mt-1">
                 <div className="flex items-center justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:bg-gray-50/50 transition-colors bg-white/50">

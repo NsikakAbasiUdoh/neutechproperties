@@ -946,11 +946,27 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                             <td className="px-6 py-4">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-lg overflow-hidden border border-gray-300">
-                                  <img
-                                    src={prop.images[0]}
-                                    alt={prop.title}
-                                    className="h-full w-full object-cover"
-                                  />
+                                  {(prop.images?.[0] || prop.videoUrl)?.match(
+                                    /\.(mp4|webm|ogg)$/i,
+                                  ) ||
+                                  (
+                                    prop.images?.[0] || prop.videoUrl
+                                  )?.startsWith("data:video/") ? (
+                                    <video
+                                      src={prop.images?.[0] || prop.videoUrl}
+                                      className="h-full w-full object-cover"
+                                      muted
+                                      loop
+                                      playsInline
+                                      autoPlay
+                                    />
+                                  ) : (
+                                    <img
+                                      src={prop.images?.[0] || prop.videoUrl}
+                                      alt={prop.title}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  )}
                                 </div>
                                 <div className="ml-4">
                                   <div className="text-sm font-medium text-gray-900">
@@ -1213,11 +1229,31 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                           <td className="px-6 py-4">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-16 w-16 bg-gray-200 rounded-lg overflow-hidden border border-gray-300">
-                                <img
-                                  src={property.images[0]}
-                                  alt={property.title}
-                                  className="h-full w-full object-cover"
-                                />
+                                {(
+                                  property.images?.[0] || property.videoUrl
+                                )?.match(/\.(mp4|webm|ogg)$/i) ||
+                                (
+                                  property.images?.[0] || property.videoUrl
+                                )?.startsWith("data:video/") ? (
+                                  <video
+                                    src={
+                                      property.images?.[0] || property.videoUrl
+                                    }
+                                    className="h-full w-full object-cover"
+                                    muted
+                                    loop
+                                    playsInline
+                                    autoPlay
+                                  />
+                                ) : (
+                                  <img
+                                    src={
+                                      property.images?.[0] || property.videoUrl
+                                    }
+                                    alt={property.title}
+                                    className="h-full w-full object-cover"
+                                  />
+                                )}
                               </div>
                               <div className="ml-4">
                                 <div className="text-sm font-bold text-gray-900">
@@ -1317,11 +1353,23 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                   >
                     <div className="bg-gray-50 border-b border-gray-100 p-4 flex gap-4 items-center">
                       <div className="w-16 h-16 rounded-md overflow-hidden flex-shrink-0 bg-gray-200 border border-gray-300">
-                        <img
-                          src={request.propertyImage}
-                          alt={request.propertyTitle}
-                          className="w-full h-full object-cover"
-                        />
+                        {request.propertyImage?.match(/\.(mp4|webm|ogg)$/i) ||
+                        request.propertyImage?.startsWith("data:video/") ? (
+                          <video
+                            src={request.propertyImage}
+                            className="w-full h-full object-cover"
+                            muted
+                            loop
+                            playsInline
+                            autoPlay
+                          />
+                        ) : (
+                          <img
+                            src={request.propertyImage}
+                            alt={request.propertyTitle}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
                       </div>
                       <div className="overflow-hidden">
                         <h4 className="font-bold text-gray-800 truncate">

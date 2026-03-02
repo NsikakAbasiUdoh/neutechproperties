@@ -301,6 +301,9 @@ const App: React.FC = () => {
             fallbackProperty.imageUrl = newProperty.images[0];
             // Remove the plural array field which causes the error
             delete fallbackProperty.images;
+          } else if (newProperty.videoUrl) {
+            fallbackProperty.imageUrl = newProperty.videoUrl;
+            delete fallbackProperty.images;
           }
 
           // Fix 3: Remove 'videoUrl' if DB doesn't have it

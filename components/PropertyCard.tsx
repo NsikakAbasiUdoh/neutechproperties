@@ -44,6 +44,15 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onRequest }) => {
               e.currentTarget.style.display = "none";
             }}
           />
+        ) : property.videoUrl ? (
+          <video
+            src={property.videoUrl}
+            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+            muted
+            loop
+            playsInline
+            autoPlay
+          />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100">
             <ImageOff size={32} className="mb-2" />
