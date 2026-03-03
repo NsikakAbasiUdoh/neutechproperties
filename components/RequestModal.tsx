@@ -43,11 +43,21 @@ const RequestModal: React.FC<RequestModalProps> = ({
   // Combined media items (images + video)
   const mediaItems = useMemo(() => {
     if (!property) return [];
+
+    const isVideo = (url: string) => {
+      if (!url) return false;
+      return url.match(/\.(mp4|webm|ogg)$/i) || url.startsWith("data:video/");
+    };
+
     const images = property.images || [];
     const items: { type: "image" | "video"; url: string }[] = images.map(
-      (url) => ({ type: "image", url }),
+      (url) => ({
+        type: isVideo(url) ? "video" : "image",
+        url,
+      }),
     );
-    if (property.videoUrl) {
+
+    if (property.videoUrl && !images.includes(property.videoUrl)) {
       items.push({ type: "video", url: property.videoUrl });
     }
     return items;
@@ -167,6 +177,8 @@ const RequestModal: React.FC<RequestModalProps> = ({
                 <video
                   src={mediaItems[currentImageIndex].url}
                   controls
+                  autoPlay
+                  playsInline
                   className="absolute inset-0 w-full h-full object-contain bg-black transition-opacity duration-300 z-10"
                 />
               ) : (
@@ -203,12 +215,12 @@ const RequestModal: React.FC<RequestModalProps> = ({
                   </button>
 
                   {/* Dots Indicator */}
-                  <div className="absolute bottom-24 md:bottom-32 left-0 right-0 flex justify-center space-x-2 z-20">
+                  <div className="absolute bottom-24 md:bottom-32 left-0 right-0 flex justify-center space-x-2 z-20 pointer-events-none">
                     {mediaItems.map((item, idx) => (
                       <button
                         key={idx}
                         onClick={() => setCurrentImageIndex(idx)}
-                        className={`w-2 h-2 rounded-full transition-colors ${idx === currentImageIndex ? "bg-secondary" : "bg-white/50 hover:bg-white"}`}
+                        className={`w-2 h-2 rounded-full transition-colors pointer-events-auto ${idx === currentImageIndex ? "bg-secondary" : "bg-white/50 hover:bg-white"}`}
                         title={
                           item.type === "video" ? "Video" : `Image ${idx + 1}`
                         }
@@ -219,7 +231,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
               )}
 
               {/* Property Info Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-8 z-20">
+              <div className="absolute bottom-0 left-0 right-0 p-8 z-20 pointer-events-none">
                 <div className="flex items-center justify-between mb-2">
                   <span className="bg-secondary text-primary px-3 py-1 rounded-full text-xs font-bold uppercase">
                     {property.type}

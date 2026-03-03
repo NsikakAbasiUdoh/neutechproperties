@@ -25,6 +25,14 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onRequest }) => {
   const isRent = property.type === PropertyType.RENT;
   const coverImage = images.length > 0 ? images[0] : null;
 
+  const isVideo = (url: string | null | undefined) => {
+    if (!url) return false;
+    return url.match(/\.(mp4|webm|ogg)$/i) || url.startsWith("data:video/");
+  };
+
+  const coverMedia = coverImage || property.videoUrl;
+  const isCoverVideo = isVideo(coverMedia);
+
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 border border-white/20 flex flex-col h-full group hover:-translate-y-1">
       {/* Image Container */}
@@ -32,27 +40,33 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onRequest }) => {
         className="relative h-60 overflow-hidden bg-gray-200 cursor-pointer"
         onClick={() => onRequest && onRequest(property)}
       >
-        {coverImage && !imgError ? (
-          <img
-            src={coverImage}
-            alt={property.title}
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-            onError={(e) => {
-              setImgError(true);
-              e.currentTarget.style.display = "none";
-            }}
-          />
-        ) : property.videoUrl ? (
-          <video
-            src={property.videoUrl}
-            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-            muted
-            loop
-            playsInline
-            autoPlay
-          />
+        {coverMedia && !imgError ? (
+          isCoverVideo ? (
+            <video
+              src={coverMedia}
+              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+              muted
+              loop
+              playsInline
+              autoPlay
+              onError={(e) => {
+                setImgError(true);
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          ) : (
+            <img
+              src={coverMedia}
+              alt={property.title}
+              loading="lazy"
+              decoding="async"
+              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+              onError={(e) => {
+                setImgError(true);
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          )
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100">
             <ImageOff size={32} className="mb-2" />
