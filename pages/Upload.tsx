@@ -70,8 +70,8 @@ const Upload: React.FC<UploadProps> = ({ propertyContext, onNavigate }) => {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
   // Video State
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
+  const [videoPreviewUrls, setVideoPreviewUrls] = useState<string[]>([]);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -99,12 +99,12 @@ const Upload: React.FC<UploadProps> = ({ propertyContext, onNavigate }) => {
       const newPreviews: string[] = [];
       let sizeError = "";
 
-      const minSize = 25 * 1024; // 25KB
+      const maxSize = 2 * 1024 * 1024; // 2MB
 
       selectedFiles.forEach((file: File) => {
         // Basic validation
-        if (file.size < minSize) {
-          sizeError = `One or more images are too small (<25KB).`;
+        if (file.size > maxSize) {
+          sizeError = `One or more images are too large (>2MB).`;
         } else {
           validFiles.push(file);
           newPreviews.push(URL.createObjectURL(file));
@@ -141,29 +141,47 @@ const Upload: React.FC<UploadProps> = ({ propertyContext, onNavigate }) => {
 
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
+      const selectedFiles = Array.from(e.target.files);
+      const validFiles: File[] = [];
+      const newPreviews: string[] = [];
+      let sizeError = "";
 
       // Basic validation (e.g., max 10MB)
       const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        setError("Video file is too large (max 10MB).");
-        return;
+
+      selectedFiles.forEach((file: File) => {
+        if (file.size > maxSize) {
+          sizeError = `One or more videos are too large (>10MB).`;
+        } else {
+          validFiles.push(file);
+          newPreviews.push(URL.createObjectURL(file));
+        }
+      });
+
+      if (sizeError) {
+        setError(sizeError);
+      } else {
+        setError("");
       }
 
-      setError("");
-      setVideoFile(file);
-      setVideoPreviewUrl(URL.createObjectURL(file));
+      setVideoFiles((prev) => [...prev, ...validFiles]);
+      setVideoPreviewUrls((prev) => [...prev, ...newPreviews]);
 
       e.target.value = "";
     }
   };
 
-  const removeVideo = () => {
-    if (videoPreviewUrl) {
-      URL.revokeObjectURL(videoPreviewUrl);
-    }
-    setVideoFile(null);
-    setVideoPreviewUrl(null);
+  const removeVideo = (index: number) => {
+    const newFiles = [...videoFiles];
+    const newPreviews = [...videoPreviewUrls];
+
+    URL.revokeObjectURL(newPreviews[index]);
+
+    newFiles.splice(index, 1);
+    newPreviews.splice(index, 1);
+
+    setVideoFiles(newFiles);
+    setVideoPreviewUrls(newPreviews);
   };
 
   const handleAuth = (e: React.FormEvent) => {
@@ -208,7 +226,7 @@ const Upload: React.FC<UploadProps> = ({ propertyContext, onNavigate }) => {
     if (!formData.price) missingFields.push("Price");
     if (!formData.state) missingFields.push("State");
     if (!formData.lga) missingFields.push("LGA");
-    if (imageFiles.length === 0 && !videoFile)
+    if (imageFiles.length === 0 && videoFiles.length === 0)
       missingFields.push("At least one Property Image or Video");
 
     if (missingFields.length > 0) {
@@ -239,10 +257,22 @@ const Upload: React.FC<UploadProps> = ({ propertyContext, onNavigate }) => {
         }
       }
 
-      // Upload Video if present
-      let uploadedVideoUrl: string | null = null;
-      if (videoFile) {
-        uploadedVideoUrl = await uploadVideo(videoFile, "properties");
+      // Upload Videos if present
+      let validVideoUrls: string[] = [];
+      if (videoFiles.length > 0) {
+        const uploadPromises = videoFiles.map((file) =>
+          uploadVideo(file, "properties"),
+        );
+        const uploadedUrls = await Promise.all(uploadPromises);
+
+        // Filter out any failed uploads (nulls)
+        validVideoUrls = uploadedUrls.filter((url) => url !== null) as string[];
+
+        if (validVideoUrls.length === 0) {
+          throw new Error(
+            "Failed to upload videos. Please check your connection.",
+          );
+        }
       }
 
       // 2. Create Property Record
@@ -263,7 +293,7 @@ const Upload: React.FC<UploadProps> = ({ propertyContext, onNavigate }) => {
         type: formData.type,
         category: formData.category,
         images: validImageUrls, // Save array of URLs
-        videoUrl: uploadedVideoUrl || undefined,
+        videoUrls: validVideoUrls, // Save array of URLs
         dateAdded: Date.now(),
         contactPhone: formData.contactPhone,
         status: PropertyStatus.PENDING,
@@ -707,6 +737,7 @@ const Upload: React.FC<UploadProps> = ({ propertyContext, onNavigate }) => {
                           id="video-upload"
                           name="video-upload"
                           type="file"
+                          multiple
                           className="sr-only"
                           onChange={handleVideoChange}
                           accept="video/*"
@@ -715,27 +746,34 @@ const Upload: React.FC<UploadProps> = ({ propertyContext, onNavigate }) => {
                       <p className="pl-1">or drag and drop</p>
                     </div>
                     <p className="text-xs text-gray-500">
-                      MP4, WebM, OGG (Max 10MB)
+                      MP4, WebM, OGG (Max 10MB per file)
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Video Preview */}
-              {videoPreviewUrl && (
-                <div className="mt-4 relative group rounded-lg overflow-hidden bg-gray-100 border border-gray-200 max-w-md">
-                  <video
-                    src={videoPreviewUrl}
-                    controls
-                    className="w-full h-auto max-h-64 object-contain bg-black"
-                  />
-                  <button
-                    type="button"
-                    onClick={removeVideo}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-sm z-10"
-                  >
-                    <XCircle size={16} />
-                  </button>
+              {/* Video Previews Grid */}
+              {videoPreviewUrls.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {videoPreviewUrls.map((url, index) => (
+                    <div
+                      key={index}
+                      className="relative group aspect-video rounded-lg overflow-hidden bg-gray-100 border border-gray-200"
+                    >
+                      <video
+                        src={url}
+                        controls
+                        className="w-full h-full object-cover bg-black"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeVideo(index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-sm z-10"
+                      >
+                        <XCircle size={14} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

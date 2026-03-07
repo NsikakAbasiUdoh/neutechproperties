@@ -57,7 +57,13 @@ const RequestModal: React.FC<RequestModalProps> = ({
       }),
     );
 
-    if (property.videoUrl && !images.includes(property.videoUrl)) {
+    if (property.videoUrls && property.videoUrls.length > 0) {
+      property.videoUrls.forEach((url) => {
+        if (!images.includes(url)) {
+          items.push({ type: "video", url });
+        }
+      });
+    } else if (property.videoUrl && !images.includes(property.videoUrl)) {
       items.push({ type: "video", url: property.videoUrl });
     }
     return items;

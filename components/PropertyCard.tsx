@@ -30,7 +30,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onRequest }) => {
     return url.match(/\.(mp4|webm|ogg)$/i) || url.startsWith("data:video/");
   };
 
-  const coverMedia = coverImage || property.videoUrl;
+  const coverMedia =
+    coverImage ||
+    (property.videoUrls && property.videoUrls.length > 0
+      ? property.videoUrls[0]
+      : property.videoUrl);
   const isCoverVideo = isVideo(coverMedia);
 
   return (
@@ -83,9 +87,13 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onRequest }) => {
 
         {/* Photo/Video Count Indicator */}
         <div className="absolute bottom-4 right-4 flex flex-col gap-1 items-end">
-          {property.videoUrl && (
+          {((property.videoUrls && property.videoUrls.length > 0) ||
+            property.videoUrl) && (
             <div className="bg-black/70 backdrop-blur text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center">
-              <Video size={12} className="mr-1" /> Video
+              <Video size={12} className="mr-1" />{" "}
+              {property.videoUrls && property.videoUrls.length > 1
+                ? `${property.videoUrls.length} Videos`
+                : "Video"}
             </div>
           )}
           {images.length > 1 && (

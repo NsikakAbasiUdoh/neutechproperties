@@ -946,14 +946,26 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                             <td className="px-6 py-4">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-lg overflow-hidden border border-gray-300">
-                                  {(prop.images?.[0] || prop.videoUrl)?.match(
-                                    /\.(mp4|webm|ogg)$/i,
-                                  ) ||
+                                  {(
+                                    prop.images?.[0] ||
+                                    (prop.videoUrls && prop.videoUrls.length > 0
+                                      ? prop.videoUrls[0]
+                                      : prop.videoUrl)
+                                  )?.match(/\.(mp4|webm|ogg)$/i) ||
                                   (
-                                    prop.images?.[0] || prop.videoUrl
+                                    prop.images?.[0] ||
+                                    (prop.videoUrls && prop.videoUrls.length > 0
+                                      ? prop.videoUrls[0]
+                                      : prop.videoUrl)
                                   )?.startsWith("data:video/") ? (
                                     <video
-                                      src={prop.images?.[0] || prop.videoUrl}
+                                      src={
+                                        prop.images?.[0] ||
+                                        (prop.videoUrls &&
+                                        prop.videoUrls.length > 0
+                                          ? prop.videoUrls[0]
+                                          : prop.videoUrl)
+                                      }
                                       className="h-full w-full object-cover"
                                       muted
                                       loop
@@ -962,7 +974,13 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                                     />
                                   ) : (
                                     <img
-                                      src={prop.images?.[0] || prop.videoUrl}
+                                      src={
+                                        prop.images?.[0] ||
+                                        (prop.videoUrls &&
+                                        prop.videoUrls.length > 0
+                                          ? prop.videoUrls[0]
+                                          : prop.videoUrl)
+                                      }
                                       alt={prop.title}
                                       className="h-full w-full object-cover"
                                     />
@@ -1230,14 +1248,26 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-16 w-16 bg-gray-200 rounded-lg overflow-hidden border border-gray-300">
                                 {(
-                                  property.images?.[0] || property.videoUrl
+                                  property.images?.[0] ||
+                                  (property.videoUrls &&
+                                  property.videoUrls.length > 0
+                                    ? property.videoUrls[0]
+                                    : property.videoUrl)
                                 )?.match(/\.(mp4|webm|ogg)$/i) ||
                                 (
-                                  property.images?.[0] || property.videoUrl
+                                  property.images?.[0] ||
+                                  (property.videoUrls &&
+                                  property.videoUrls.length > 0
+                                    ? property.videoUrls[0]
+                                    : property.videoUrl)
                                 )?.startsWith("data:video/") ? (
                                   <video
                                     src={
-                                      property.images?.[0] || property.videoUrl
+                                      property.images?.[0] ||
+                                      (property.videoUrls &&
+                                      property.videoUrls.length > 0
+                                        ? property.videoUrls[0]
+                                        : property.videoUrl)
                                     }
                                     className="h-full w-full object-cover"
                                     muted
@@ -1248,7 +1278,11 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                                 ) : (
                                   <img
                                     src={
-                                      property.images?.[0] || property.videoUrl
+                                      property.images?.[0] ||
+                                      (property.videoUrls &&
+                                      property.videoUrls.length > 0
+                                        ? property.videoUrls[0]
+                                        : property.videoUrl)
                                     }
                                     alt={property.title}
                                     className="h-full w-full object-cover"

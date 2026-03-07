@@ -570,14 +570,26 @@ const AgentAuth: React.FC<AgentAuthProps> = ({
                     >
                       <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-200">
                         {/* Changed from property.imageUrl to property.images[0] */}
-                        {(property.images?.[0] || property.videoUrl)?.match(
-                          /\.(mp4|webm|ogg)$/i,
-                        ) ||
-                        (property.images?.[0] || property.videoUrl)?.startsWith(
-                          "data:video/",
-                        ) ? (
+                        {(
+                          property.images?.[0] ||
+                          (property.videoUrls && property.videoUrls.length > 0
+                            ? property.videoUrls[0]
+                            : property.videoUrl)
+                        )?.match(/\.(mp4|webm|ogg)$/i) ||
+                        (
+                          property.images?.[0] ||
+                          (property.videoUrls && property.videoUrls.length > 0
+                            ? property.videoUrls[0]
+                            : property.videoUrl)
+                        )?.startsWith("data:video/") ? (
                           <video
-                            src={property.images?.[0] || property.videoUrl}
+                            src={
+                              property.images?.[0] ||
+                              (property.videoUrls &&
+                              property.videoUrls.length > 0
+                                ? property.videoUrls[0]
+                                : property.videoUrl)
+                            }
                             className="w-full h-full object-cover"
                             muted
                             loop
@@ -586,7 +598,13 @@ const AgentAuth: React.FC<AgentAuthProps> = ({
                           />
                         ) : (
                           <img
-                            src={property.images?.[0] || property.videoUrl}
+                            src={
+                              property.images?.[0] ||
+                              (property.videoUrls &&
+                              property.videoUrls.length > 0
+                                ? property.videoUrls[0]
+                                : property.videoUrl)
+                            }
                             alt={property.title}
                             className="w-full h-full object-cover"
                           />
