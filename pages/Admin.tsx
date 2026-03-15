@@ -1603,7 +1603,7 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                         <option value={PropertyCategory.HOUSE}>House</option>
                         <option value={PropertyCategory.LAND}>Land</option>
                         <option value={PropertyCategory.COMMERCIAL}>
-                          Cars & others
+                          Vehicle
                         </option>
                       </select>
                     </div>

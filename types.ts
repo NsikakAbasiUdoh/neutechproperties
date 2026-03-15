@@ -6,7 +6,7 @@ export enum PropertyType {
 export enum PropertyCategory {
   HOUSE = "House",
   LAND = "Land",
-  COMMERCIAL = "Cars & others",
+  COMMERCIAL = "Vehicle",
 }
 
 export enum PropertyStatus {
@@ -29,7 +29,8 @@ export interface Property {
   type: PropertyType;
   category: PropertyCategory;
   images: string[]; // Changed from imageUrl to images array
-  videoUrl?: string; // Added for video upload
+  videoUrl?: string; // Added for video upload (legacy)
+  videoUrls?: string[]; // Added for multiple video uploads
   dateAdded: number;
   contactPhone: string;
   status: PropertyStatus;

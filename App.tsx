@@ -24,14 +24,35 @@ import { supabase, isConnected, logVisit } from "./services/supabaseClient";
 import { MAINTENANCE_MODE } from "./constants";
 import { AlertTriangle, WifiOff, Loader2, RefreshCw } from "lucide-react";
 
-// Lazy Load Pages for Performance Optimization
-const Home = lazy(() => import("./pages/Home"));
-const Properties = lazy(() => import("./pages/Properties"));
-const Upload = lazy(() => import("./pages/Upload"));
-const Contact = lazy(() => import("./pages/Contact"));
-const Admin = lazy(() => import("./pages/Admin"));
-const AgentAuth = lazy(() => import("./pages/AgentAuth"));
-const Maintenance = lazy(() => import("./pages/Maintenance"));
+// Lazy Load Pages for Performance Optimization with Retry Mechanism
+const lazyWithRetry = (componentImport: () => Promise<any>) =>
+  lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem("page-has-been-force-refreshed") || "false",
+    );
+
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem("page-has-been-force-refreshed", "false");
+      return component;
+    } catch (error) {
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        window.sessionStorage.setItem("page-has-been-force-refreshed", "true");
+        window.location.reload();
+        // Return a promise that never resolves to prevent React from rendering until reload
+        return new Promise(() => {});
+      }
+      throw error;
+    }
+  });
+
+const Home = lazyWithRetry(() => import("./pages/Home"));
+const Properties = lazyWithRetry(() => import("./pages/Properties"));
+const Upload = lazyWithRetry(() => import("./pages/Upload"));
+const Contact = lazyWithRetry(() => import("./pages/Contact"));
+const Admin = lazyWithRetry(() => import("./pages/Admin"));
+const AgentAuth = lazyWithRetry(() => import("./pages/AgentAuth"));
+const Maintenance = lazyWithRetry(() => import("./pages/Maintenance"));
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -43,7 +64,10 @@ interface ErrorBoundaryState {
 }
 
 // Error Boundary Component
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   public state: ErrorBoundaryState = {
     hasError: false,
     error: null,
@@ -85,7 +109,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       );
     }
 
-    return this.props.children;
+    return (this as any).props.children;
   }
 }
 
@@ -161,6 +185,11 @@ const App: React.FC = () => {
             ? p.images
             : p.imageUrl
               ? [p.imageUrl]
+              : [],
+          videoUrls: Array.isArray(p.videoUrls)
+            ? p.videoUrls
+            : p.videoUrl
+              ? [p.videoUrl]
               : [],
           features: Array.isArray(p.features) ? p.features : [],
           location: p.location || {
@@ -279,47 +308,72 @@ const App: React.FC = () => {
         let { error } = await supabase.from("properties").insert([newProperty]);
 
         // Strategy 2: Fallback for Schema Mismatch
-        // If the DB is older/different (e.g. created via the Mongoose schema provided), it might:
-        // 1. Lack 'agentId'
-        // 2. Expect 'imageUrl' (string) instead of 'images' (array)
         if (
           error &&
-          (error.code === "42703" || error.message.includes("Could not find"))
+          (error.code === "42703" ||
+            error.message.includes("Could not find") ||
+            error.message.includes("does not exist"))
         ) {
           console.warn(
-            "Schema mismatch detected (Missing columns). Attempting fallback insert compatible with legacy schema...",
+            "Schema mismatch detected. Attempting smart fallback insert...",
           );
 
-          const fallbackProperty: any = { ...newProperty };
+          let currentProperty: any = { ...newProperty };
+          let currentError = error;
 
-          // Fix 1: Remove 'agentId' if DB doesn't have it
-          delete fallbackProperty.agentId;
+          // Try up to 4 times to remove missing columns one by one
+          for (let i = 0; i < 4; i++) {
+            if (
+              !currentError ||
+              (currentError.code !== "42703" &&
+                !currentError.message.includes("Could not find") &&
+                !currentError.message.includes("does not exist"))
+            ) {
+              break;
+            }
 
-          // Fix 2: Handle 'images' -> 'imageUrl' conversion
-          if (newProperty.images && newProperty.images.length > 0) {
-            // DB likely expects 'imageUrl' as a single string
-            fallbackProperty.imageUrl = newProperty.images[0];
-            // Remove the plural array field which causes the error
-            delete fallbackProperty.images;
-          } else if (newProperty.videoUrl) {
-            fallbackProperty.imageUrl = newProperty.videoUrl;
-            delete fallbackProperty.images;
-          }
+            const errMsg = currentError.message || "";
 
-          // Fix 3: Remove 'videoUrl' if DB doesn't have it
-          delete fallbackProperty.videoUrl;
+            if (errMsg.includes("videoUrls")) {
+              delete currentProperty.videoUrls;
+            } else if (errMsg.includes("videoUrl")) {
+              delete currentProperty.videoUrl;
+            } else if (errMsg.includes("agentId")) {
+              delete currentProperty.agentId;
+            } else if (errMsg.includes("images")) {
+              if (currentProperty.images && currentProperty.images.length > 0) {
+                currentProperty.imageUrl = currentProperty.images[0];
+              } else if (currentProperty.videoUrl) {
+                currentProperty.imageUrl = currentProperty.videoUrl;
+              } else if (
+                currentProperty.videoUrls &&
+                currentProperty.videoUrls.length > 0
+              ) {
+                currentProperty.imageUrl = currentProperty.videoUrls[0];
+              }
+              delete currentProperty.images;
+            } else if (errMsg.includes("imageUrl")) {
+              delete currentProperty.imageUrl;
+            } else {
+              // If we can't identify the column, break to avoid infinite loop
+              break;
+            }
 
-          // Retry insert with sanitized object
-          const retry = await supabase
-            .from("properties")
-            .insert([fallbackProperty]);
-
-          if (!retry.error) {
-            console.log("Fallback insert successful!");
-            error = null; // Clear error to proceed to success block
-          } else {
-            console.error("Fallback insert also failed:", retry.error);
-            // If retry fails, we assume the initial error was the cause and fall through
+            const retry = await supabase
+              .from("properties")
+              .insert([currentProperty]);
+            if (!retry.error) {
+              console.log("Fallback insert successful!");
+              error = null;
+              break;
+            } else {
+              console.error(
+                `Fallback insert attempt ${i + 1} failed:`,
+                retry.error,
+              );
+              currentError = retry.error;
+              error = retry.error; // keep the latest error
+            }
           }
         }
 
@@ -332,10 +386,11 @@ const App: React.FC = () => {
               "Permission Denied: You don't have permission to save properties.";
           if (
             error.code === "42703" ||
-            error.message.includes("Could not find")
-          )
-            helpfulMessage =
-              "Database Error: The database schema is outdated (Missing columns). Please check 'agentId' or 'images' columns.";
+            error.message.includes("Could not find") ||
+            error.message.includes("does not exist")
+          ) {
+            helpfulMessage = `Database Error: The database schema is outdated. Missing column: ${error.message}`;
+          }
 
           return { success: false, error: helpfulMessage };
         } else {

@@ -77,6 +77,28 @@ const Home: React.FC<HomeProps> = ({ propertyContext, onNavigate }) => {
 
       {/* Content Wrapper (z-10 to sit above background) */}
       <div className="relative z-10 flex flex-col min-h-screen">
+        {/* Moving Text Banner */}
+        <div className="w-full bg-secondary/90 text-white overflow-hidden py-2 backdrop-blur-sm border-b border-white/20">
+          <div
+            className="whitespace-nowrap inline-block font-semibold tracking-wider text-sm"
+            style={{
+              animation: "marquee 25s linear infinite",
+            }}
+          >
+            TO FIND A PROPERTY IN A PARTICULAR LOCAL GOVERNMENT AREA, PLEASE
+            SELECT STATE AND THEN L.G.A. AND CLICK SEARCH OR YOU GO TO
+            PROPERTIES PAGE
+          </div>
+          <style>
+            {`
+              @keyframes marquee {
+                0% { transform: translateX(100vw); }
+                100% { transform: translateX(-100%); }
+              }
+            `}
+          </style>
+        </div>
+
         {/* Hero Section */}
         <div className="relative min-h-[600px] flex items-center justify-center py-20">
           <div className="w-full max-w-5xl px-4 text-center">
