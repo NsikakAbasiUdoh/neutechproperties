@@ -82,6 +82,15 @@ const AgentAuth: React.FC<AgentAuthProps> = ({
   const [editPassportPreview, setEditPassportPreview] = useState("");
 
   // Dashboard - Properties
+  const isVideo = (url: string | null | undefined) => {
+    if (!url) return false;
+    const cleanUrl = url.split("?")[0].split("#")[0];
+    return (
+      cleanUrl.match(/\.(mp4|webm|ogg|mov|avi|mkv|m4v)$/i) ||
+      url.startsWith("data:video/")
+    );
+  };
+
   const myProperties = properties.filter((p) => p.agentId === currentUser?.id);
   const pendingCount = myProperties.filter(
     (p) => p.status === PropertyStatus.PENDING,
@@ -570,18 +579,12 @@ const AgentAuth: React.FC<AgentAuthProps> = ({
                     >
                       <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-200">
                         {/* Changed from property.imageUrl to property.images[0] */}
-                        {(
+                        {isVideo(
                           property.images?.[0] ||
-                          (property.videoUrls && property.videoUrls.length > 0
-                            ? property.videoUrls[0]
-                            : property.videoUrl)
-                        )?.match(/\.(mp4|webm|ogg)$/i) ||
-                        (
-                          property.images?.[0] ||
-                          (property.videoUrls && property.videoUrls.length > 0
-                            ? property.videoUrls[0]
-                            : property.videoUrl)
-                        )?.startsWith("data:video/") ? (
+                            (property.videoUrls && property.videoUrls.length > 0
+                              ? property.videoUrls[0]
+                              : property.videoUrl),
+                        ) ? (
                           <video
                             src={
                               property.images?.[0] ||

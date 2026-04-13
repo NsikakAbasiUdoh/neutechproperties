@@ -336,6 +336,15 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
   };
 
   // --- Derived State ---
+  const isVideo = (url: string | null | undefined) => {
+    if (!url) return false;
+    const cleanUrl = url.split("?")[0].split("#")[0];
+    return (
+      cleanUrl.match(/\.(mp4|webm|ogg|mov|avi|mkv|m4v)$/i) ||
+      url.startsWith("data:video/")
+    );
+  };
+
   const pendingProperties = properties.filter(
     (p) => p.status === PropertyStatus.PENDING,
   );
@@ -946,18 +955,13 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                             <td className="px-6 py-4">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-lg overflow-hidden border border-gray-300">
-                                  {(
+                                  {isVideo(
                                     prop.images?.[0] ||
-                                    (prop.videoUrls && prop.videoUrls.length > 0
-                                      ? prop.videoUrls[0]
-                                      : prop.videoUrl)
-                                  )?.match(/\.(mp4|webm|ogg)$/i) ||
-                                  (
-                                    prop.images?.[0] ||
-                                    (prop.videoUrls && prop.videoUrls.length > 0
-                                      ? prop.videoUrls[0]
-                                      : prop.videoUrl)
-                                  )?.startsWith("data:video/") ? (
+                                      (prop.videoUrls &&
+                                      prop.videoUrls.length > 0
+                                        ? prop.videoUrls[0]
+                                        : prop.videoUrl),
+                                  ) ? (
                                     <video
                                       src={
                                         prop.images?.[0] ||
@@ -1247,20 +1251,13 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                           <td className="px-6 py-4">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-16 w-16 bg-gray-200 rounded-lg overflow-hidden border border-gray-300">
-                                {(
+                                {isVideo(
                                   property.images?.[0] ||
-                                  (property.videoUrls &&
-                                  property.videoUrls.length > 0
-                                    ? property.videoUrls[0]
-                                    : property.videoUrl)
-                                )?.match(/\.(mp4|webm|ogg)$/i) ||
-                                (
-                                  property.images?.[0] ||
-                                  (property.videoUrls &&
-                                  property.videoUrls.length > 0
-                                    ? property.videoUrls[0]
-                                    : property.videoUrl)
-                                )?.startsWith("data:video/") ? (
+                                    (property.videoUrls &&
+                                    property.videoUrls.length > 0
+                                      ? property.videoUrls[0]
+                                      : property.videoUrl),
+                                ) ? (
                                   <video
                                     src={
                                       property.images?.[0] ||
@@ -1387,8 +1384,7 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                   >
                     <div className="bg-gray-50 border-b border-gray-100 p-4 flex gap-4 items-center">
                       <div className="w-16 h-16 rounded-md overflow-hidden flex-shrink-0 bg-gray-200 border border-gray-300">
-                        {request.propertyImage?.match(/\.(mp4|webm|ogg)$/i) ||
-                        request.propertyImage?.startsWith("data:video/") ? (
+                        {isVideo(request.propertyImage) ? (
                           <video
                             src={request.propertyImage}
                             className="w-full h-full object-cover"
@@ -1602,8 +1598,8 @@ const Admin: React.FC<AdminProps> = ({ propertyContext }) => {
                       >
                         <option value={PropertyCategory.HOUSE}>House</option>
                         <option value={PropertyCategory.LAND}>Land</option>
-                        <option value={PropertyCategory.COMMERCIAL}>
-                          Vehicle
+                        <option value={PropertyCategory.CARS_AND_OTHERS}>
+                          Cars & others
                         </option>
                       </select>
                     </div>

@@ -46,7 +46,11 @@ const RequestModal: React.FC<RequestModalProps> = ({
 
     const isVideo = (url: string) => {
       if (!url) return false;
-      return url.match(/\.(mp4|webm|ogg)$/i) || url.startsWith("data:video/");
+      const cleanUrl = url.split("?")[0].split("#")[0];
+      return (
+        cleanUrl.match(/\.(mp4|webm|ogg|mov|avi|mkv|m4v)$/i) ||
+        url.startsWith("data:video/")
+      );
     };
 
     const images = property.images || [];
