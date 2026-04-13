@@ -273,21 +273,22 @@ const App: React.FC = () => {
 
   // Sync Current User Status
   useEffect(() => {
-    if (currentUser) {
-      const syncedUser = users.find((u) => u.id === currentUser.id);
-      if (syncedUser) {
-        if (JSON.stringify(syncedUser) !== JSON.stringify(currentUser)) {
-          setCurrentUser(syncedUser);
-          localStorage.setItem(
-            "neutech_current_user",
-            JSON.stringify(syncedUser),
-          );
-        }
+    setCurrentUser((prevUser) => {
+      if (!prevUser) return null;
+      const syncedUser = users.find((u) => u.id === prevUser.id);
+      if (
+        syncedUser &&
+        JSON.stringify(syncedUser) !== JSON.stringify(prevUser)
+      ) {
+        localStorage.setItem(
+          "neutech_current_user",
+          JSON.stringify(syncedUser),
+        );
+        return syncedUser;
       }
-    } else {
-      localStorage.removeItem("neutech_current_user");
-    }
-  }, [users, currentUser]);
+      return prevUser;
+    });
+  }, [users]);
 
   useEffect(() => {
     localStorage.setItem("neutech_admin_code", adminAccessCode);
@@ -319,61 +320,27 @@ const App: React.FC = () => {
           );
 
           let currentProperty: any = { ...newProperty };
-          let currentError = error;
 
-          // Try up to 4 times to remove missing columns one by one
-          for (let i = 0; i < 4; i++) {
-            if (
-              !currentError ||
-              (currentError.code !== "42703" &&
-                !currentError.message.includes("Could not find") &&
-                !currentError.message.includes("does not exist"))
-            ) {
-              break;
-            }
+          // Strip all new columns at once to handle multiple missing columns
+          delete currentProperty.videoUrls;
+          delete currentProperty.agentId;
 
-            const errMsg = currentError.message || "";
+          if (currentProperty.images && currentProperty.images.length > 0) {
+            currentProperty.imageUrl = currentProperty.images[0];
+          } else if (currentProperty.videoUrl) {
+            currentProperty.imageUrl = currentProperty.videoUrl;
+          }
+          delete currentProperty.images;
 
-            if (errMsg.includes("videoUrls")) {
-              delete currentProperty.videoUrls;
-            } else if (errMsg.includes("videoUrl")) {
-              delete currentProperty.videoUrl;
-            } else if (errMsg.includes("agentId")) {
-              delete currentProperty.agentId;
-            } else if (errMsg.includes("images")) {
-              if (currentProperty.images && currentProperty.images.length > 0) {
-                currentProperty.imageUrl = currentProperty.images[0];
-              } else if (currentProperty.videoUrl) {
-                currentProperty.imageUrl = currentProperty.videoUrl;
-              } else if (
-                currentProperty.videoUrls &&
-                currentProperty.videoUrls.length > 0
-              ) {
-                currentProperty.imageUrl = currentProperty.videoUrls[0];
-              }
-              delete currentProperty.images;
-            } else if (errMsg.includes("imageUrl")) {
-              delete currentProperty.imageUrl;
-            } else {
-              // If we can't identify the column, break to avoid infinite loop
-              break;
-            }
-
-            const retry = await supabase
-              .from("properties")
-              .insert([currentProperty]);
-            if (!retry.error) {
-              console.log("Fallback insert successful!");
-              error = null;
-              break;
-            } else {
-              console.error(
-                `Fallback insert attempt ${i + 1} failed:`,
-                retry.error,
-              );
-              currentError = retry.error;
-              error = retry.error; // keep the latest error
-            }
+          const retry = await supabase
+            .from("properties")
+            .insert([currentProperty]);
+          if (!retry.error) {
+            console.log("Fallback insert successful!");
+            error = null;
+          } else {
+            console.error(`Fallback insert failed:`, retry.error);
+            error = retry.error;
           }
         }
 
